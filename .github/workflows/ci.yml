@@ -23,13 +23,17 @@ jobs:
           push: true
           tags: ninhnguyen1003/myapp:${{ github.sha }}
 
-      - name: Update GitOps repo
-        run: |
-          git clone https://x-access-token:${{ secrets.GITOPS_TOKEN }}@github.com/Ninhnguyen1003/k8s-gitops-lab.git
-          cd k8s-gitops-lab
-          sed -i "s|image: ninhnguyen1003/myapp:.*|image: ninhnguyen1003/myapp:${{ github.sha }}|" manifests/deployment.yaml
-          git config user.email "ci@bot.com"
-          git config user.name "CI Bot"
-          git add .
-          git commit -m "Update image to ${{ github.sha }}"
-          git push
+      - name: Trigger CD
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITOPS_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'cd.yaml',
+              ref: 'main',
+              inputs: {
+                image_tag: '${{ github.sha }}'
+              }
+            })
