@@ -1,26 +1,22 @@
 name: CD - Deploy to GitOps
 
 on:
-  workflow_call: 
-      image_tag:
+  workflow_call:    
+    inputs:         
+      image_tag:    
         type: string
         required: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
-    environment: production 
-    
+    environment: production
     steps:
       - name: Update GitOps repo
         run: |
           git clone https://x-access-token:${{ secrets.GITOPS_TOKEN }}@github.com/Ninhnguyen1003/k8s-gitops-lab.git
           cd k8s-gitops-lab
-          
-          # Sửa tag bằng input truyền từ CI sang
           sed -i "s|image: ninhnguyen1003/myapp:.*|image: ninhnguyen1003/myapp:${{ inputs.image_tag }}|" manifests/deployment.yaml
-          
           git config user.email "ci@bot.com"
           git config user.name "CI Bot"
           git add .
