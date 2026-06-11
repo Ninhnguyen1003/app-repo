@@ -13,11 +13,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Clone GitOps Manifests Repo
+        run: |
+          git clone https://github.com/Ninhnguyen1003/k8s-gitops-lab.git manifest-folder
+
       - name: Validate K8s Manifests syntax
         run: |
           curl -sSLo kc.tgz https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz
           tar -xzf kc.tgz && sudo mv kubeconform /usr/local/bin/
-          kubeconform -strict -summary manifests/
+          # 🟢 Check cú pháp trong thư mục vừa clone về
+          kubeconform -strict -summary manifest-folder/manifests/
 
   
   build:
