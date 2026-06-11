@@ -1,24 +1,29 @@
 name: CD - Deploy to GitOps
 
 on:
-  workflow_dispatch:
-    inputs:
-      image_tag:
-        description: 'Image tag to deploy'
-        required: true
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'manifests/**' 
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    
+    
     environment: production
+    
     steps:
       - name: Update GitOps repo
         run: |
           git clone https://x-access-token:${{ secrets.GITOPS_TOKEN }}@github.com/Ninhnguyen1003/k8s-gitops-lab.git
           cd k8s-gitops-lab
-          sed -i "s|image: ninhnguyen1003/myapp:.*|image: ninhnguyen1003/myapp:${{ inputs.image_tag }}|" manifests/deployment.yaml
+          
+          # Cập nhật tag image bằng chính SHA của commit vừa được merge
+          sed -i "s|image: ninhnguyen1003/myapp:.*|image: ninhnguyen1003/myapp:${{ github.sha }}|" manifests/deployment.yaml
+          
           git config user.email "ci@bot.com"
           git config user.name "CI Bot"
           git add .
-          git commit -m "Deploy image ${{ inputs.image_tag }}"
+          git commit -m "⚙️ GITOPS: Deploy image v_${{ github.sha }} [skip ci]"
           git push

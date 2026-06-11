@@ -1,11 +1,28 @@
 name: CI - Build & Push
 
 on:
-  push:
+  pull_request:
     branches: [main]
+  push:
+    branches: [main] 
 
 jobs:
+  
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate K8s Manifests syntax
+        run: |
+          curl -sSLo kc.tgz https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz
+          tar -xzf kc.tgz && sudo mv kubeconform /usr/local/bin/
+          kubeconform -strict -summary manifests/
+
+  
   build:
+    needs: validate
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,18 +39,3 @@ jobs:
           context: ./app
           push: true
           tags: ninhnguyen1003/myapp:${{ github.sha }}
-
-      - name: Trigger CD
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITOPS_TOKEN }}
-          script: |
-            await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'cd.yml',
-              ref: 'main',
-              inputs: {
-                image_tag: '${{ github.sha }}'
-              }
-            })
