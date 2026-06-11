@@ -1,34 +1,14 @@
 name: CI - Build & Push
 
 on:
-  pull_request:
-    branches: [main]
   push:
-    branches: [main] 
+    branches: [main]
 
 jobs:
-  
-  validate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Clone GitOps Manifests Repo
-        run: |
-          git clone https://github.com/Ninhnguyen1003/k8s-gitops-lab.git manifest-folder
-
-      - name: Validate K8s Manifests syntax
-        run: |
-          curl -sSLo kc.tgz https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz
-          tar -xzf kc.tgz && sudo mv kubeconform /usr/local/bin/
-          # 🟢 Check cú pháp trong thư mục vừa clone về
-          kubeconform -strict -summary manifest-folder/manifests/
-
-  
   build:
-    needs: validate
-    if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ github.sha }} 
     steps:
       - uses: actions/checkout@v4
 
@@ -44,3 +24,10 @@ jobs:
           context: ./app
           push: true
           tags: ninhnguyen1003/myapp:${{ github.sha }}
+
+  trigger-cd:
+    needs: build 
+    uses: ./.github/workflows/cd.yml 
+    with:
+      image_tag: ${{ needs.build.outputs.tag }}
+    secrets: inherit 
